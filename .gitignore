@@ -1,1 +1,4 @@
 .env
+*secret*
+users_database.yml
+configuration.yml

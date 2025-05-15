@@ -14,7 +14,7 @@ services:
     restart: unless-stopped
     command: tunnel --no-autoupdate run --protocol http2
     environment:
-      - TUNNEL_TOKEN=${CF_TUNNEL_TOKEN:-.}
+      - TUNNEL_TOKEN=${CF_TUNNEL_TOKEN}
     networks: 
       - external_nsn_cloudflare
 
@@ -39,7 +39,7 @@ volumes:
     driver_opts:
       o: bind
       type: none
-      device: ./data
+      device: ./external_data
 
 # docker compose rm
 # docker compose up --force-recreate --remove-orphans
