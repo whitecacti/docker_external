@@ -1,0 +1,14 @@
+services:
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    ports:
+      - ${AUDIOBOOKSHELF_PORTS}
+    volumes:
+      - ${AUDIOBOOKSHELF_NAS_MEDIA}:/audiobooks
+      - ${AUDIOBOOKSHELF_NAS}/config:/config
+      - ${AUDIOBOOKSHELF_NAS}/metadata:/metadata
+    environment:
+      - ABS_CONFIG_PATH=/config
+      - ABS_METADATA_PATH=/metadata
+      - ABS_PORT=80
+    restart: unless-stopped
