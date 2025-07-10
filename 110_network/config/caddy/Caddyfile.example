@@ -1,0 +1,127 @@
+{
+	debug
+}
+
+# Remember, when creating new certs sometimes you need to  
+	# 1 - switch cf trunnels ssl/tls encryption to full
+	# 2 - swith it back after
+
+# below 2 lines need to be added to linux host in /etc/sysctl.conf
+	# net.core.rmem_max=7500000
+	# net.core.wmem_max=7500000
+
+(cloudflare) {
+	encode gzip
+	tls {
+		dns cloudflare {$CLOUDFLARE_DNS_TOKEN}
+		resolvers 1.1.1.1
+		propagation_delay 30s
+	}
+}
+
+# From across the internet - https://caddy.community/t/securing-web-apps-with-caddy-and-authelia-in-docker-compose-an-opinionated-practical-and-minimal-production-ready-login-portal-guide/20465
+# Do not need auth, because everything is local/ts for this host
+# (secure) {
+# 	forward_auth {args.0} https://auth.shsolo.com {
+# 		uri /api/authz/forward-auth
+# 		copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
+# 		header_up Host {upstream_hostport}
+# 	}
+# }
+
+# auth.{$DOMAIN} {
+# 	import cloudflare
+# 	reverse_proxy authelia:9091
+# }
+
+#adguard dns
+adguard.{$DOMAIN} {
+	import cloudflare
+	reverse_proxy 192.168.1.1:0000
+}
+
+truenas.{$DOMAIN} {
+	import cloudflare
+	reverse_proxy http://192.168.1.1
+}
+
+rss.{$DOMAIN} {
+	import cloudflare
+	reverse_proxy 192.168.1.1:0000
+}
+
+audiobooks.{$DOMAIN} {
+	import cloudflare
+	reverse_proxy 192.168.1.1:0000
+}
+
+jupyter.{$DOMAIN} {
+	import cloudflare
+	reverse_proxy 192.168.1.1:0000
+}
+
+proxmox.{$DOMAIN} {
+	import cloudflare
+	reverse_proxy https://192.168.1.1:0000 {
+		transport http {
+			tls_insecure_skip_verify
+		}
+	}
+}
+
+wg.{$DOMAIN} {
+	import cloudflare
+	reverse_proxy 192.168.1.1:0000
+}
+
+syncthing.{$DOMAIN} {
+	import cloudflare
+	reverse_proxy 192.168.1.1:0000
+}
+
+homebox.{$DOMAIN} {
+	import cloudflare
+	reverse_proxy 192.168.1.1:0000
+}
+
+# arrrrr
+deluge.{$DOMAIN} {
+	import cloudflare
+	reverse_proxy 192.168.1.1:0000
+}
+
+prowlarr.{$DOMAIN} {
+	import cloudflare
+	reverse_proxy 192.168.1.1:0000
+}
+
+sonarr.{$DOMAIN} {
+	import cloudflare
+	reverse_proxy 192.168.1.1:0000
+}
+
+radarr.{$DOMAIN} {
+	import cloudflare
+	reverse_proxy 192.168.1.1:0000
+}
+
+# tailscale availability
+rss.ts.{$DOMAIN} {
+	import cloudflare
+	reverse_proxy 192.168.1.1:0000
+}
+
+jupyter.ts.{$DOMAIN} {
+	import cloudflare
+	reverse_proxy 192.168.1.1:0000
+}
+
+deluge.ts.{$DOMAIN} {
+	import cloudflare
+	reverse_proxy 192.168.1.1:0000
+}
+
+audiobooks.ts.{$DOMAIN} {
+	import cloudflare
+	reverse_proxy 192.168.1.1:0000
+}

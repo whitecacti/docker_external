@@ -2,3 +2,6 @@
 *secret*
 users_database.yml
 configuration.yml
+Caddyfile
+AdGuardHome.yaml
+*DS_Store*
