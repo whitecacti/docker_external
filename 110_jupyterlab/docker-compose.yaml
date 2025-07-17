@@ -1,0 +1,27 @@
+services:
+  jupyterlab:
+    container_name: jupyter-datascience
+    user: jovyan
+    build: .
+    restart: unless-stopped
+    volumes:
+      - jupyter-data:/home/jovyan
+      - ${JUPYTER_NAS_MOUNT}:/home/jovyan/work_nas:rw
+    environment:
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN}
+      - NB_USER=jovyan
+      - NB_UID=${JUPYTER_UID}
+      - NB_GID=${JUPYTER_GID}
+      - CHOWN_HOME=yes
+    working_dir: /home/jovyan
+    ports:
+      - ${JUPYTER_EXTERNAL_PORT}:${JUPYTER_INTERNAL_PORT}
+    networks:
+      - ens_bridge
+
+volumes:
+  jupyter-data:
+
+networks:
+  ens_bridge:
+    external: true
