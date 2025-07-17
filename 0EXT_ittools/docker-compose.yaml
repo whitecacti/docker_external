@@ -1,0 +1,13 @@
+services:
+  it-tools:
+    image: 'corentinth/it-tools:latest'  # The Docker image to use.
+    ports:
+      - "${CHANGE_EXTERNAL_PORT}:80"  # Maps port 80 inside the container to port 8080 on the host.
+    restart: unless-stopped  # Ensures the container restarts unless it is explicitly stopped.
+    container_name: it-tools  # Custom name for the container.
+    networks:
+      - ens_bridge
+
+networks:
+  ens_bridge:
+    external: true
