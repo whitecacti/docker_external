@@ -1,0 +1,42 @@
+services:
+  redis:
+    container_name: redis
+    image: docker.io/valkey/valkey:8-alpine
+    command: valkey-server --save 30 1 --loglevel warning
+    restart: unless-stopped
+    volumes:
+      - ${SEARXNG_REDIS_VOLUME}:/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
+
+  searxng:
+    container_name: searxng
+    image: docker.io/searxng/searxng:latest
+    restart: unless-stopped
+    ports:
+      - ${SEARXNG_EXTERNAL_PORT}:${SEARXNG_INTERNAL_PORT}
+    volumes:
+      - ${SEARXNG_VOLUME}:/etc/searxng:rw
+    environment:
+      - UWSGI_WORKERS=${SEARXNG_UWSGI_WORKERS:-4}
+      - UWSGI_THREADS=${SEARXNG_UWSGI_THREADS:-4}
+      - SEARXNG_SECRET=${CUSTOM_SEARXNG_SECRET}
+      - SEARXNG_LANGUAGE=${CUSTOM_SEARXNG_LANGUAGE}
+      - SEARXNG_AUTOCOMPLETE=${CUSTOM_SEARXNG_AUTOCOMPLETE}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
+    networks:
+      - ens_bridge
+
+volumes:
+  valkey_data:
+
+networks:
+  ens_bridge:
+    external: true
