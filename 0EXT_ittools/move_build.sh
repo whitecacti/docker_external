@@ -1,8 +1,7 @@
-ssh netcup "mkdir -p ~/docker/ittools;"
+ssh nc2 "mkdir -p ~/docker/ittools;"
 
-scp .env netcup:~/docker/ittools/.env 
-scp * netcup:~/docker/ittools/
+scp -r * nc2:~/docker/ittools/
 
-ssh netcup "cd ~/docker/ittools/; \
-            docker compose --env-file .env down; \
-            docker compose --env-file .env up -d"
+ssh nc2 "cd ~/docker/ittools/; \
+            docker compose --env-file ./config/.env down; \
+            docker compose --env-file ./config/.env up -d"
