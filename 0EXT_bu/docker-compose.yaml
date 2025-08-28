@@ -1,0 +1,22 @@
+services:
+  aws-sync:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - ./config/.env
+    environment:
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL}
+    volumes:
+      # Mount scripts directory
+      - ./scripts:/scripts
+      - ${MP1}
+      - ${MP2}
+      - ${MP3}
+      - ${MP4}
+      - ${MP5}
+      # Add additional directories to backup here:
+      # - /path/to/local/dir:/data/backup_name
+    restart: unless-stopped
