@@ -1,0 +1,16 @@
+services:
+  api:
+    container_name: api
+    build: .
+    volumes:
+      - ./fast_api.py:/fast_api.py
+    ports:
+      - ${API_110_EXTERNAL_PORT}:5000
+    entrypoint: /usr/bin/python /fast_api.py
+    networks:
+      - ens_bridge
+    restart: unless-stopped
+
+networks:
+  ens_bridge:
+    external: true
