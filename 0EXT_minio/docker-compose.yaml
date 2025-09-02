@@ -1,0 +1,21 @@
+services:
+  minio:
+    container_name: minio
+    # image: bitnami/minio:latest
+    image: quay.io/minio/minio
+    ports:
+      - ${CONFIG_PORTS}
+    environment:
+      MINIO_ROOT_USER: ${CONFIG_MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${CONFIG_MINIO_ROOT_PASSWORD}
+      MINIO_BROWSER: ${CONFIG_MINIO_BROWSER}
+    command: server /data --console-address ":9001"
+    volumes:
+        - ./data:/data
+    networks:
+      - ens_bridge
+    restart: unless-stopped
+
+networks:
+  ens_bridge:
+    external: true
