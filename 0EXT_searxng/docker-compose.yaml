@@ -17,7 +17,7 @@ services:
     image: docker.io/searxng/searxng:latest
     restart: unless-stopped
     ports:
-      - ${SEARXNG_EXTERNAL_PORT}:${SEARXNG_INTERNAL_PORT}
+      - 127.0.0.1:${SEARXNG_EXTERNAL_PORT}:${SEARXNG_INTERNAL_PORT}
     volumes:
       - ${SEARXNG_VOLUME}:/etc/searxng:rw
     environment:
