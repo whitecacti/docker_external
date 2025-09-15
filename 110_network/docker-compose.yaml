@@ -58,7 +58,7 @@ services:
       - 53:53/tcp # plain dns over tcp
       - 53:53/udp # plain dns over udp
       - ${ADGUARDHOME_HTTP_WEB}:80/tcp # http web interface
-      - ${ADGUARDHOME_HTTP_INIT_WEB}:3000/tcp # initial setup web interface
+      # - ${ADGUARDHOME_HTTP_INIT_WEB}:3000/tcp # initial setup web interface
     volumes:
       - adguard_config:/opt/adguardhome/conf # app configuration
       - adguard_work:/opt/adguardhome/work # app working directory
@@ -76,10 +76,6 @@ networks:
          gateway: ${NETWORK_GATEWAY}
 
 volumes:
-  caddy_data:
-  caddy_config:
-  caddy_letsencrypt:
-  caddy_lib_letsencrypt:
   ts_config:
   sock_volume:
   adguard_config:
@@ -94,3 +90,27 @@ volumes:
       o: bind 
       type: none
       device: ./volumes/adguard_work
+  caddy_data:
+    driver: local
+    driver_opts:
+      o: bind 
+      type: none
+      device: ./volumes/caddy_data
+  caddy_config:
+    driver: local
+    driver_opts:
+      o: bind 
+      type: none
+      device: ./volumes/caddy_config
+  caddy_letsencrypt:
+    driver: local
+    driver_opts:
+      o: bind 
+      type: none
+      device: ./volumes/caddy_letsencrypt
+  caddy_lib_letsencrypt:
+    driver: local
+    driver_opts:
+      o: bind 
+      type: none
+      device: ./volumes/caddy_lib_letsencrypt

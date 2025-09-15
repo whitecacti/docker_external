@@ -24,6 +24,59 @@ services:
       - 58846:58846 #optional
     restart: unless-stopped
 
+  transmission:
+    image: lscr.io/linuxserver/transmission:latest
+    container_name: transmission
+    environment:
+      - PUID=${COMMON_PUID}
+      - PGID=${COMMON_PUID}
+      - TZ=America/Los_Angeles
+      # - TRANSMISSION_WEB_HOME= #optional
+      - USER=svo
+      - PASS=password
+    volumes:
+      - /tnas_docker/arr/transmission:/config
+      - ${DELUGE_NAS_MEDIA}/movies:/tnas_movies
+      - ${DELUGE_NAS_MEDIA}/tv_shows:/tnas_tv_shows
+      - ${DELUGE_NAS_MEDIA}/music:/tnas_music
+      - ${DELUGE_NAS_MEDIA}/iso:/tnas_iso
+      - ${DELUGE_NAS_MEDIA}/audiobooks:/tnas_audiobooks
+      - ${DELUGE_NAS_MEDIA}/books:/tnas_books
+      - ${DELUGE_NAS_MEDIA}/torrents:/tnas_torrents
+    ports:
+      - 9091:9091
+      - 51413:51413
+      - 51413:51413/udp
+    restart: unless-stopped
+
+  qbittorrent:
+    # https://hub.docker.com/r/linuxserver/qbittorrent/
+    # admin
+    # tdH6NIWrd
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Los_Angeles
+      - WEBUI_PORT=8080
+      - TORRENTING_PORT=6882
+      - DOCKER_MODS=ghcr.io/vuetorrent/vuetorrent-lsio-mod:latest
+    volumes:
+      - /tnas_docker/arr/qbittorrent:/config
+      - ${DELUGE_NAS_MEDIA}/movies:/tnas_movies
+      - ${DELUGE_NAS_MEDIA}/tv_shows:/tnas_tv_shows
+      - ${DELUGE_NAS_MEDIA}/music:/tnas_music
+      - ${DELUGE_NAS_MEDIA}/iso:/tnas_iso
+      - ${DELUGE_NAS_MEDIA}/audiobooks:/tnas_audiobooks
+      - ${DELUGE_NAS_MEDIA}/books:/tnas_books
+      - ${DELUGE_NAS_MEDIA}/torrents:/tnas_torrents
+    ports:
+      - 8080:8080
+      - 6882:6882
+      - 6882:6882/udp
+    restart: unless-stopped
+
   # Trackers & Indexers
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
