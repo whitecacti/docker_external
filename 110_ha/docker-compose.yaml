@@ -1,0 +1,43 @@
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: ghcr.io/home-assistant/home-assistant:stable
+    restart: unless-stopped
+    ports:
+      - ${HA_PORTS}
+    # privileged: true
+    environment:
+      - TZ=America/Los_Angeles
+    devices:
+      # zigbee adapter
+      - /dev/ttyACM0
+    volumes:
+      - ./config:/config
+      - ./bu_config:/config/backups
+      - ./bu:/backup
+
+  # finish this https://www.zigbee2mqtt.io/guide/installation/02_docker.html#docker-compose
+  zigbee2mqtt:
+    container_name: zigbee2mqtt
+    image: ghcr.io/koenkk/zigbee2mqtt
+    restart: unless-stopped
+    volumes:
+        - ./data:/app/data
+        - /run/udev:/run/udev:ro
+    ports:
+        # Frontend port
+        - ${MQTT_PORTS}
+    environment:
+        - TZ=America/Los_Angeles
+    devices:
+        # Make sure this matched your adapter location
+        - /dev/ttyACM0:/dev/ttyACM0
+
+
+# https://community.home-assistant.io/t/cloudflare-400-bad-request-error/326047/8
+# added the below to configuration.yml
+# http:
+#  use_x_forwarded_for: true
+#  trusted_proxies:
+#    - 172.28.0.1
+#    - 172.28.0.2
