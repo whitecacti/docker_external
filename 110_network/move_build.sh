@@ -1,20 +1,18 @@
-scp .env docker_host_110:~/docker/network/.env 
-scp docker-compose.yaml docker_host_110:~/docker/network/docker-compose.yaml
-scp -rp ./config/caddy docker_host_110:~/docker/network/config/
+ssh docker_host_110 "\
+        mkdir -p ~/docker; \
+        mkdir -p ~/docker/network/; \
+        mkdir -p ~/docker/network/volumes/; \
+        mkdir -p ~/docker/network/volumes/adguard_config; \
+        mkdir -p ~/docker/network/volumes/adguard_work; \
+        mkdir -p ~/docker/network/volumes/caddy_data; \
+        mkdir -p ~/docker/network/volumes/caddy_config; \
+        mkdir -p ~/docker/network/volumes/caddy_letsencrypt; \
+        mkdir -p ~/docker/network/volumes/caddy_lib_letsencrypt; \
+        "
+
+rsync -avP * docker_host_110:~/docker/network/
 
 echo ===== RESTART =====
 ssh docker_host_110 'cd ~/docker/network/; \
                     docker compose --env-file .env down; \
                     docker compose --env-file .env up -d' 
-
-echo ===== RESTARTING ALL SERVICES =====
-ssh docker_host_110 'cd ~/docker/homepage/; \
-                docker compose down; \
-                docker compose up -d; \
-            cd ~/docker/jupyterlab/; \
-                docker compose down; \
-                docker compose up -d; \
-            cd ~/docker/syncthing/; \
-                docker compose down; \
-                docker compose up -d; \
-             '
