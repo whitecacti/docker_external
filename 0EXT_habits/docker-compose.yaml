@@ -1,0 +1,24 @@
+services:
+  beaverhabits:
+    container_name: beaverhabits
+    user: ${HABITS_USER}
+    environment:
+      # See the link below to find all the environment variables
+      # https://github.com/daya0576/beaverhabits/wiki/Development#options
+      - HABITS_STORAGE=USER_DISK
+      - INDEX_HABIT_DATE_COLUMNS=8 # Customize the date columns for the index page.
+      - MAX_USER_COUNT=5
+      - ENABLE_IOS_STANDALONE=true
+    volumes:
+      # sudo chown -R 9999:9999 ./beaver
+      - ./beaver:/app/.user
+    ports:
+      - ${HABITS_PORTS}
+    restart: unless-stopped
+    image: daya0576/beaverhabits:latest
+    networks:
+      - ens_bridge
+
+networks:
+  ens_bridge:
+    external: true
