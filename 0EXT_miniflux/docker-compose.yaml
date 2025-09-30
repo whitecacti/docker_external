@@ -23,6 +23,8 @@ services:
       - POSTGRES_DB=${MINIFLUX_POSTGRES_DB}
     volumes:
       - ./data:/var/lib/postgresql/data
+    # sudo chown -R 0000:0000 data
+    user: ${MINIFLUX_DB_USER}
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "miniflux"]
       interval: 10s
