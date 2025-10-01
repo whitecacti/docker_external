@@ -11,6 +11,7 @@ services:
     devices:
       # zigbee adapter
       - /dev/ttyACM0
+      - /dev/ttyUSB0
     volumes:
       - ./config:/config
       - ./bu_config:/config/backups
