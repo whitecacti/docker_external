@@ -6,7 +6,7 @@ ssh docker_host_110 "\
         mkdir -p ~/docker/ha/bu; \
         "
 
-scp -r * docker_host_110:~/docker/ha/
+rsync -avP * docker_host_110:~/docker/ha/
 
 ssh docker_host_110 "\
     cd ~/docker/ha; \
