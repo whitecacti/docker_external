@@ -1,0 +1,1 @@
+scp ./dags/* docker_host_110:~/docker/airflow/dags/
