@@ -21,9 +21,9 @@ def get_fake_profile():
 # def get_fake_user():
 #     return {"name": fake.name(), "email": fake.email()}
 #
-# @app.get("/api/address")
-# def get_fake_address():
-#     return fake.address()
+@app.get("/api/address")
+def get_fake_address():
+    return fake.address()
 
 if __name__ == '__main__':
     import uvicorn
