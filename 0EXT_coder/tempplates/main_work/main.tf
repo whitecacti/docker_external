@@ -59,6 +59,12 @@ resource "coder_agent" "main" {
       # Install pyenv
       echo "Installing pyenv..."
       curl https://pyenv.run | bash
+
+      # install ffuf
+      wget https://github.com/ffuf/ffuf/releases/download/v2.1.0/ffuf_2.1.0_linux_arm64.tar.gz
+      tar -xzf ffuf_2.1.0_linux_arm64.tar.gz
+      sudo mv ffuf /usr/local/bin/
+      sudo chmod +x /usr/local/bin/ffuf
       
       # Add pyenv to PATH and initialize it
       echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
