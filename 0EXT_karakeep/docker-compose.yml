@@ -1,0 +1,67 @@
+services:
+  web:
+    container_name: karakeep
+    image: ghcr.io/karakeep-app/karakeep:${KARAKEEP_VERSION:-release}
+    restart: unless-stopped
+    volumes:
+      # By default, the data is stored in a docker volume called "data".
+      # If you want to mount a custom directory, change the volume mapping to:
+      # - /path/to/your/directory:/data
+      - ./karakeep_data:/data
+    ports:
+      - ${KARAKEEP_PORTS}
+    environment:
+      MEILI_ADDR: http://meilisearch:${MEILI_PORT}
+      BROWSER_WEB_URL: http://chrome:${CHROME_PORT}
+      KARAKEEP_VERSION: ${KARAKEEP_VERSION}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      DISABLE_SIGNUPS: true
+      EMAIL_VERIFICATION_REQUIRED: true
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_SECURE: ${SMTP_SECURE}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+      # You almost never want to change the value of the DATA_DIR variable.
+      # If you want to mount a custom directory, change the volume mapping above instead.
+      DATA_DIR: /data # DON'T CHANGE THIS
+    networks:
+      - connector
+      - ens_bridge
+  chrome:
+    image: gcr.io/zenika-hub/alpine-chrome:124
+    restart: unless-stopped
+    command:
+      - --no-sandbox
+      - --disable-gpu
+      - --disable-dev-shm-usage
+      - --remote-debugging-address=0.0.0.0
+      - --remote-debugging-port=${CHROME_PORT}
+      - --hide-scrollbars
+    networks:
+      - connector
+  meilisearch:
+    image: getmeili/meilisearch:v1.13.3
+    restart: unless-stopped
+    environment:
+      MEILI_NO_ANALYTICS: "true"
+      MEILI_ADDR: http://meilisearch:${MEILI_PORT}
+      BROWSER_WEB_URL: http://chrome:${CHROME_PORT}
+      KARAKEEP_VERSION: ${KARAKEEP_VERSION}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+    volumes:
+      - ./karakeep_meilisearch:/meili_data
+    networks:
+      - connector
+
+networks:
+  connector:
+  ens_bridge:
+    external: true
