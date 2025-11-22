@@ -65,12 +65,12 @@ echo 'eval "$(pyenv init -)"' >> ~/.bashrc
 init_pyenv
 
 # Install Python version
-echo "Installing Python ${PYTHON_VERSION}..."
+echo "Installing Python $PYTHON_VERSION..."
 pyenv install "$PYTHON_VERSION"
 pyenv global "$PYTHON_VERSION"
 
 # Create virtual environment
-echo "Creating virtual environment '${VENV_NAME}'..."
+echo "Creating virtual environment '$VENV_NAME'..."
 pyenv virtualenv "$PYTHON_VERSION" "$VENV_NAME"
 pyenv global "$VENV_NAME"
 
