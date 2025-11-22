@@ -2,7 +2,7 @@
 # Main startup script - orchestrates all initialization tasks
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo "=========================================="
 echo "Starting workspace initialization..."
