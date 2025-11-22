@@ -11,6 +11,12 @@ terraform {
 
 locals {
   username = data.coder_workspace_owner.me.name
+
+  # Load modular startup scripts
+  script_init_home     = file("${path.module}/scripts/init_home.sh")
+  script_setup_python  = file("${path.module}/scripts/setup_python.sh")
+  script_install_tools = file("${path.module}/scripts/install_tools.sh")
+  script_startup       = file("${path.module}/scripts/startup.sh")
 }
 
 variable "docker_socket" {
@@ -34,75 +40,32 @@ resource "coder_agent" "main" {
   startup_script = <<-EOT
     set -e
 
-    # Prepare user home with default files on first start.
-    if [ ! -f ~/.init_done ]; then
-      cp -rT /etc/skel ~
-      touch ~/.init_done
-    fi
+    # Create scripts directory
+    SCRIPTS_DIR="$HOME/.coder-scripts"
+    mkdir -p "$SCRIPTS_DIR"
 
-    # Install Python development dependencies and setup pyenv
-    if [ ! -f ~/.python_setup_done ]; then
-      echo "Setting up Python development environment..."
-      
-      # Update package list
-      sudo apt update
-      
-      # Install Python build dependencies
-      sudo apt install -y build-essential libssl-dev zlib1g-dev \
-        libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm \
-        libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev \
-        libffi-dev liblzma-dev net-tools
-      
-      # Upgrade all packages
-      sudo apt upgrade -y
-      
-      # Install pyenv
-      echo "Installing pyenv..."
-      curl https://pyenv.run | bash
+    # Write modular scripts to disk
+    cat > "$SCRIPTS_DIR/init_home.sh" << 'SCRIPT_EOF'
+${local.script_init_home}
+SCRIPT_EOF
 
-      # install ffuf
-      wget https://github.com/ffuf/ffuf/releases/download/v2.1.0/ffuf_2.1.0_linux_arm64.tar.gz
-      tar -xzf ffuf_2.1.0_linux_arm64.tar.gz
-      sudo mv ffuf /usr/local/bin/
-      sudo chmod +x /usr/local/bin/ffuf
-      
-      # Add pyenv to PATH and initialize it
-      echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
-      echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
-      echo 'eval "$(pyenv init -)"' >> ~/.bashrc
-      
-      # Also add to current session
-      export PYENV_ROOT="$HOME/.pyenv"
-      export PATH="$PYENV_ROOT/bin:$PATH"
-      eval "$(pyenv init -)"
-      
-      # Install Python 3.11 with pyenv
-      echo "Installing Python 3.11..."
-      pyenv install 3.11.10
-      pyenv global 3.11.10
+    cat > "$SCRIPTS_DIR/setup_python.sh" << 'SCRIPT_EOF'
+${local.script_setup_python}
+SCRIPT_EOF
 
-      # Create virtual environment called main_env
-      echo "Creating virtual environment 'main_env'..."
-      pyenv virtualenv 3.11.10 main_env
-      pyenv global main_env
+    cat > "$SCRIPTS_DIR/install_tools.sh" << 'SCRIPT_EOF'
+${local.script_install_tools}
+SCRIPT_EOF
 
-      # Verify installation
-      python --version
-      pip --version
+    cat > "$SCRIPTS_DIR/startup.sh" << 'SCRIPT_EOF'
+${local.script_startup}
+SCRIPT_EOF
 
-      # install python packages
-      pip3 install boto3
-      
-      # Mark setup as complete
-      touch ~/.python_setup_done
-      echo "Python development environment setup complete!"
-    else
-      echo "Python development environment already set up."
-      # Still need to initialize pyenv for this session
-      export PYENV_ROOT="$HOME/.pyenv"
-      export PATH="$PYENV_ROOT/bin:$PATH"
-      eval "$(pyenv init -)"
-    fi
+    # Make scripts executable
+    chmod +x "$SCRIPTS_DIR"/*.sh
+
+    # Run the main startup orchestrator
+    "$SCRIPTS_DIR/startup.sh"
   EOT
 
   # These environment variables allow you to make Git commits right away after creating a
