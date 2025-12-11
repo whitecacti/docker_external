@@ -231,59 +231,26 @@ module "code-server" {
   ]
 }
 
-# # See https://registry.coder.com/modules/coder/jetbrains-gateway
-# module "jetbrains_gateway" {
-#   count  = data.coder_workspace.me.start_count
-#   source = "registry.coder.com/coder/jetbrains-gateway/coder"
-
-#   # JetBrains IDEs to make available for the user to select
-#   jetbrains_ides = ["IU", "PS", "WS", "PY", "CL", "GO", "RM", "RD", "RR"]
-#   default        = "IU"
-
-#   # Default folder to open when starting a JetBrains IDE
-#   folder = "/home/coder"
-
-#   # This ensures that the latest non-breaking version of the module gets downloaded, you can also pin the module version to prevent breaking changes in production.
-#   version = "~> 1.0"
-
-#   agent_id   = coder_agent.main.id
-#   agent_name = "main"
-#   order      = 2
-# }
-
 module "filebrowser" {
   count    = data.coder_workspace.me.start_count
   source   = "registry.coder.com/coder/filebrowser/coder"
-  version  = "1.1.2"
+  version  = "1.1.3"
   agent_id = coder_agent.main.id
   folder   = "/home/coder"
   agent_name = "main"
   subdomain  = false
-
 }
 
-# module "coder-login" {
-#   count    = data.coder_workspace.me.start_count
-#   source   = "registry.coder.com/coder/coder-login/coder"
-#   version  = "1.1.0"
+# https://registry.coder.com/modules/djarbz/copyparty?tab=readme
+# module "copyparty" {
+#   count   = data.coder_workspace.me.start_count
+#   source  = "registry.coder.com/djarbz/copyparty/coder"
+#   version = "1.0.2"
 #   agent_id = coder_agent.main.id
-# }
-
-# data "coder_parameter" "ai_prompt" {
-#   type        = "string"
-#   name        = "AI Prompt"
-#   default     = ""
-#   description = "Write a prompt for Claude Code"
-#   mutable     = true
-# }
-
-# module "claude-code" {
-#   source              = "registry.coder.com/coder/claude-code/coder"
-#   version             = "2.1.0"
-#   agent_id            = coder_agent.main.id
-#   folder              = "/home/coder"
-#   install_claude_code = true
-#   claude_code_version = "latest"
+#   arguments = [
+#     "-v", "/home/coder/:/home:rw",       # Share home directory (read-only)
+#     "-e2dsa",                           # Enables general file indexing"
+#   ]
 # }
 
 resource "docker_volume" "home_volume" {
