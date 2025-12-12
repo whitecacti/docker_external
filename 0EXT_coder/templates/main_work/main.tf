@@ -4,6 +4,7 @@ terraform {
       source = "coder/coder"
     }
     docker = {
+      # Corrected to the standard Docker provider
       source = "kreuzwerker/docker"
     }
   }
@@ -28,6 +29,12 @@ data "coder_provisioner" "me" {}
 data "coder_workspace" "me" {}
 data "coder_workspace_owner" "me" {}
 
+# NEW: Explicitly define the image resource to ensure it is pulled from Docker Hub
+resource "docker_image" "main" {
+  name = "spoiling337/devdesk:latest"
+  # keep_locally = true # Uncomment this if you want to keep the image on the host after the workspace is deleted
+}
+
 resource "coder_agent" "main" {
   arch           = data.coder_provisioner.me.arch
   os             = "linux"
@@ -36,72 +43,19 @@ resource "coder_agent" "main" {
 
     # Prepare user home with default files on first start.
     if [ ! -f ~/.init_done ]; then
-      cp -rT /etc/skel ~
+      # this loads some default bashrc files and others. 
+      # better to move this to the dockerfile or other places.
+      # cp -rT /etc/skel ~
       touch ~/.init_done
     fi
 
     # Install Python development dependencies and setup pyenv
     if [ ! -f ~/.python_setup_done ]; then
-      echo "Setting up Python development environment..."
-      
       # Update package list
       sudo apt update
       
-      # Install Python build dependencies
-      sudo apt install -y build-essential libssl-dev zlib1g-dev \
-        libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm \
-        libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev \
-        libffi-dev liblzma-dev net-tools
-      
       # Upgrade all packages
-      sudo apt upgrade -y
-      
-      # Install pyenv
-      echo "Installing pyenv..."
-      curl https://pyenv.run | bash
-
-      # install ffuf
-      wget https://github.com/ffuf/ffuf/releases/download/v2.1.0/ffuf_2.1.0_linux_arm64.tar.gz
-      tar -xzf ffuf_2.1.0_linux_arm64.tar.gz
-      sudo mv ffuf /usr/local/bin/
-      sudo chmod +x /usr/local/bin/ffuf
-      
-      # Add pyenv to PATH and initialize it
-      echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
-      echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
-      echo 'eval "$(pyenv init -)"' >> ~/.bashrc
-      
-      # Also add to current session
-      export PYENV_ROOT="$HOME/.pyenv"
-      export PATH="$PYENV_ROOT/bin:$PATH"
-      eval "$(pyenv init -)"
-      
-      # Install Python 3.11 with pyenv
-      echo "Installing Python 3.11..."
-      pyenv install 3.11.10
-      pyenv global 3.11.10
-
-      # Create virtual environment called main_env
-      echo "Creating virtual environment 'main_env'..."
-      pyenv virtualenv 3.11.10 main_env
-      pyenv global main_env
-
-      # Verify installation
-      python --version
-      pip --version
-
-      # install python packages
-      pip3 install boto3
-      
-      # Mark setup as complete
-      touch ~/.python_setup_done
-      echo "Python development environment setup complete!"
-    else
-      echo "Python development environment already set up."
-      # Still need to initialize pyenv for this session
-      export PYENV_ROOT="$HOME/.pyenv"
-      export PATH="$PYENV_ROOT/bin:$PATH"
-      eval "$(pyenv init -)"
+      sudo apt upgrade -ys
     fi
   EOT
 
@@ -215,8 +169,6 @@ module "code-server" {
   extensions = [
     "ms-python.python",
     "ms-python.debugpy",
-    # "ms-python.vscode-pylance",
-    # "ms-python.vscode-python-envs",
     "ms-vscode.live-server",
     "ms-toolsai.jupyter",
     "ms-toolsai.jupyter-keymap",
@@ -225,8 +177,8 @@ module "code-server" {
     "ms-toolsai.vscode-jupyter-slideshow",
     "ms-toolsai.vscode-jupyter-powertoys",
     "redhat.vscode-yaml",
-    # "Boto3typed.boto3-ide",
     "yy0931.save-as-root",
+    "hashicorp.terraform",
     "ms-azuretools.vscode-docker"
   ]
 }
@@ -241,21 +193,8 @@ module "filebrowser" {
   subdomain  = false
 }
 
-# https://registry.coder.com/modules/djarbz/copyparty?tab=readme
-# module "copyparty" {
-#   count   = data.coder_workspace.me.start_count
-#   source  = "registry.coder.com/djarbz/copyparty/coder"
-#   version = "1.0.2"
-#   agent_id = coder_agent.main.id
-#   arguments = [
-#     "-v", "/home/coder/:/home:rw",       # Share home directory (read-only)
-#     "-e2dsa",                           # Enables general file indexing"
-#   ]
-# }
-
 resource "docker_volume" "home_volume" {
   name = "coder-${data.coder_workspace.me.id}-home"
-  # Protect the volume from being deleted due to changes in attributes.
   lifecycle {
     ignore_changes = all
   }
@@ -282,8 +221,10 @@ resource "docker_volume" "home_volume" {
 
 resource "docker_container" "workspace" {
   count = data.coder_workspace.me.start_count
-  image = "codercom/enterprise-base:ubuntu"
-  # Uses lower() to avoid Docker restriction on container names.
+  
+  # MODIFIED: Use the ID of the pulled image resource
+  image = docker_image.main.image_id
+  
   name = "coder-${data.coder_workspace_owner.me.name}-${lower(data.coder_workspace.me.name)}"
   # Hostname makes the shell more user friendly: coder@my-workspace:~$
   hostname = data.coder_workspace.me.name
