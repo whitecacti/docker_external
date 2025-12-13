@@ -8,9 +8,11 @@ RUN apt-get update && apt-get install -y \
     libbz2-dev libreadline-dev libsqlite3-dev \
     wget curl llvm libncursesw5-dev xz-utils \
     tk-dev libxml2-dev libxmlsec1-dev libffi-dev \
-    liblzma-dev net-tools git unzip \ 
-     && rm -rf /var/lib/apt/lists/* \
-     && apt upgrade -y 
+    liblzma-dev net-tools git unzip dnsutils \ 
+    traceroute iputils-ping nmap hping3 \
+    ncat \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt upgrade -y 
 
 # C#
 RUN add-apt-repository -y ppa:dotnet/backports \
