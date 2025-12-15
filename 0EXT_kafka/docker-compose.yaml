@@ -1,0 +1,267 @@
+# docker compose up --remove-orphans -d 
+# PUBLIC_IP=$(curl -s -4 ifconfig.me) docker compose --env-file ./config/.env down
+# PUBLIC_IP=$(curl -s -4 ifconfig.me) docker compose --env-file ./config/.env up --remove-orphans -d
+
+services:
+  kafkaui:
+    container_name: kafkaui
+    # image: provectuslabs/kafka-ui:latest
+    # https://github.com/kafbat/kafka-ui/tree/main
+    image: ghcr.io/kafbat/kafka-ui:latest
+    ports:
+      - ${KAFKAUI_CONFIG_PORTS}
+    depends_on:
+      - broker
+      - schema-registry
+      - connect
+    environment:
+      # Internal listener for inter-container communication
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker:29092
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:${SCHEMA_REGISTRY_PORTS}
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://connect:${CONNECT_REGISTRY_PORTS}
+      KAFKA_CLUSTERS_0_NAME: main
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: main
+      SERVER_SERVLET_CONTEXT_PATH: ${KAFKAUI_CSERVER_SERVLET_CONTEXT_PATH}
+      AUTH_TYPE: "LOGIN_FORM"
+      SPRING_SECURITY_USER_NAME: ${KAFKAUI_SPRING_SECURITY_USER_NAME}
+      SPRING_SECURITY_USER_PASSWORD: ${KAFKAUI_SPRING_SECURITY_USER_PASSWORD}
+
+      # https://github.com/kafbat/kafka-ui/blob/main/documentation/compose/ui-sasl.yaml
+      # Kafka uses the Java Authentication and Authorization Service (JAAS) for SASL
+      # https://kafka.apache.org/documentation/#security_sasl_jaasconfig
+      KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${KAFKA_SASL_USER}\" password=\"${KAFKA_SASL_PASS}\";"
+      KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: SASL_PLAINTEXT
+      KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM: PLAIN
+    networks:
+      - ens_bridge
+      - conf_kafka_network
+
+  broker:
+    image: confluentinc/cp-kafka:8.0.0
+    hostname: broker
+    container_name: broker
+    ports:
+      - ${BROKER_CONFIG_PORTS}
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_BROKER_ID: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@broker:29093'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      # Replace CLUSTER_ID with a unique base64 UUID using "bin/kafka-storage.sh random-uuid"
+      # See https://docs.confluent.io/kafka/operations-tools/kafka-tools.html#kafka-storage-sh
+      # /bin/kafka-storage random-uuid
+      CLUSTER_ID: ${BROKER_KAFKA_CLUSTER_ID}
+      # Below is required!
+      KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/jaas/kafka_server.conf"
+      KAFKA_SASL_ENABLED_MECHANISMS: 'PLAIN'
+      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: 'PLAIN'
+      KAFKA_SECURITY_PROTOCOL: 'SASL_PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'SASL_PLAINTEXT://broker:29092,SASL_PLAINTEXT_HOST://${PUBLIC_IP}:${BROKER_PORTS}'
+      KAFKA_LISTENERS: 'SASL_PLAINTEXT://broker:29092,CONTROLLER://broker:29093,SASL_PLAINTEXT_HOST://0.0.0.0:${BROKER_PORTS}'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,SASL_PLAINTEXT:SASL_PLAINTEXT,SASL_PLAINTEXT_HOST:SASL_PLAINTEXT'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'SASL_PLAINTEXT'
+    volumes:
+      - ./config/kafka:/etc/kafka/jaas
+    networks:
+      - conf_kafka_network
+
+  # after initialization we can apply some of the code from this in the connect container.
+  topic-initializer:
+    image: confluentinc/cp-kafka:8.0.0
+    container_name: topic-initializer
+    depends_on:
+      - broker 
+    volumes:
+      - ./config/kafka/topic-setup.sh:/bin/topic-setup.sh
+      - ./config/kafka:/etc/kafka/jaas
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: 'broker:29092'
+      KAFKA_SECURITY_PROTOCOL: 'SASL_PLAINTEXT'
+      KAFKA_SASL_MECHANISM: 'PLAIN'
+      KAFKA_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${KAFKA_SASL_USER}\" password=\"${KAFKA_SASL_PASS}\";"
+    networks:
+      - conf_kafka_network
+    command: ["/bin/bash", "-c", "/bin/topic-setup.sh"]
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:8.0.0
+    hostname: schema-registry
+    container_name: schema-registry
+    depends_on:
+      - broker
+    ports:
+      - ${SCHEMA_CONFIG_REGISTRY_PORTS}
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'broker:29092'
+      SCHEMA_REGISTRY_LISTENERS: http://schema-registry:${SCHEMA_REGISTRY_PORTS}
+      # SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL: PLAINTEXT
+
+      # https://github.com/kafbat/kafka-ui/blob/main/documentation/compose/cluster-sr-auth.yaml
+      SCHEMA_REGISTRY_SCHEMA_REGISTRY_INTER_INSTANCE_PROTOCOL: "http"
+      SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL: INFO
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
+
+      SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL: SASL_PLAINTEXT
+      SCHEMA_REGISTRY_KAFKASTORE_SASL_MECHANISM: PLAIN
+      SCHEMA_REGISTRY_KAFKASTORE_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${KAFKA_SASL_USER}\" password=\"${KAFKA_SASL_PASS}\";"
+    networks:
+      - conf_kafka_network
+
+  connect:
+    image: confluentinc/cp-server-connect:7.2.15
+    hostname: connect
+    container_name: connect
+    depends_on:
+      - broker
+      - schema-registry
+      - topic-initializer 
+    ports:
+      - ${CONNECT_CONFIG_REGISTRY_PORTS}
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: 'broker:29092'
+      CONNECT_REST_ADVERTISED_HOST_NAME: connect
+      CONNECT_GROUP_ID: compose-connect-group
+      CONNECT_CONFIG_STORAGE_TOPIC: docker-connect-configs
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_FLUSH_INTERVAL_MS: 10000
+      CONNECT_OFFSET_STORAGE_TOPIC: docker-connect-offsets
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_TOPIC: docker-connect-status
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+      CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:${SCHEMA_REGISTRY_PORTS}
+      CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
+      CONNECT_PRODUCER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor"
+      CONNECT_CONSUMER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor"
+
+      CONNECT_SECURITY_PROTOCOL: SASL_PLAINTEXT  
+      CONNECT_SASL_MECHANISM: PLAIN              
+      CONNECT_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${KAFKA_SASL_USER}\" password=\"${KAFKA_SASL_PASS}\";"
+      CONNECT_REST_EXTENSION_CLASSES: "org.apache.kafka.connect.rest.basic.auth.extension.BasicAuthSecurityRestExtension"
+    volumes:
+      - ./config/kafka:/conf
+    networks:
+      - conf_kafka_network
+    command: 
+      - bash 
+      - -c 
+      - |
+        #
+        echo "Installing connector plugins"
+        confluent-hub install --no-prompt confluentinc/kafka-connect-s3:10.6.7
+        #
+        echo "Launching Kafka Connect worker"
+        /etc/confluent/docker/run & 
+        #
+        sleep infinity
+  
+  # Links - 
+    # https://github.com/Erachter/ksqldb?tab=readme-ov-file
+    # https://docs.confluent.io/platform/current/ksqldb/developer-guide/ksqldb-reference/create-stream.html
+  ksqldb-server:
+    image: confluentinc/cp-ksqldb-server:8.0.0
+    hostname: ksqldb-server
+    container_name: ksqldb-server
+    depends_on:
+      - broker
+      - connect
+      - topic-initializer
+    ports:
+      - ${KSQL_CONFIG_REGISTRY_PORTS}
+    environment:
+      KSQL_CONFIG_DIR: "/etc/ksql"
+      KSQL_BOOTSTRAP_SERVERS: "broker:29092"
+      KSQL_HOST_NAME: ksqldb-server
+      KSQL_LISTENERS: http://0.0.0.0:${KSQL_REGISTRY_PORTS}
+      KSQL_CACHE_MAX_BYTES_BUFFERING: 0
+      KSQL_KSQL_SCHEMA_REGISTRY_URL: http://schema-registry:${SCHEMA_REGISTRY_PORTS}
+      KSQL_KSQL_CONNECT_URL: http://connect:${CONNECT_REGISTRY_PORTS}
+      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_REPLICATION_FACTOR: 1
+      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: 'true'
+      KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: 'true'
+      KSQL_SECURITY_PROTOCOL: SASL_PLAINTEXT 
+      KSQL_SASL_MECHANISM: PLAIN 
+      KSQL_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${KAFKA_SASL_USER}\" password=\"${KAFKA_SASL_PASS}\";"
+    networks:
+      - conf_kafka_network
+
+  ksqldb-cli:
+    image: confluentinc/cp-ksqldb-cli:8.0.0
+    container_name: ksqldb-cli
+    depends_on:
+      - broker
+      - connect
+      - ksqldb-server
+    entrypoint: /bin/sh
+    tty: true
+    networks:
+      - conf_kafka_network
+
+  ksql-datagen:
+    image: confluentinc/ksqldb-examples:8.0.0
+    hostname: ksql-datagen
+    container_name: ksql-datagen
+    depends_on:
+      - ksqldb-server
+      - broker
+      - schema-registry
+      - connect
+    command: "bash -c 'echo Waiting for Kafka to be ready... && \
+                          cub kafka-ready -b broker:29092 1 40 && \
+                          echo Waiting for Confluent Schema Registry to be ready... && \
+                          cub sr-ready schema-registry ${CONNECT_REGISTRY_PORTS} 40 && \
+                          echo Waiting a few seconds for topic creation to finish... && \
+                          sleep 11 && \
+                          tail -f /dev/null'"
+    environment:
+      KSQL_CONFIG_DIR: "/etc/ksql"
+      STREAMS_BOOTSTRAP_SERVERS: broker:29092
+      STREAMS_SCHEMA_REGISTRY_HOST: schema-registry
+      STREAMS_SCHEMA_REGISTRY_PORT: ${SCHEMA_REGISTRY_PORTS}
+      STREAMS_SECURITY_PROTOCOL: SASL_PLAINTEXT
+      STREAMS_SASL_MECHANISM: PLAIN 
+      STREAMS_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${KAFKA_SASL_USER}\" password=\"${KAFKA_SASL_PASS}\";"
+      CONNECT_REGISTRY_PORTS: ${CONNECT_REGISTRY_PORTS}
+    networks:
+      - conf_kafka_network
+
+  # https://github.com/confluentinc/kafka-rest
+    # dont be a dummy, read the docs!
+    # https://docs.confluent.io/platform/current/kafka-rest/production-deployment/rest-proxy/security.html
+  # https://github.com/darioajr/kafka-rest-proxy-test/blob/64055bf4ece099f04065b485529ce7d9ab834eea/docker-compose.yml#L94
+    # good stuff here
+  restproxy:
+    image: confluentinc/cp-kafka-rest:8.0.0
+    depends_on:
+      - broker
+      - schema-registry
+    ports:
+      - ${REST_CONFIG_REGISTRY_PORTS}
+    hostname: restproxy
+    container_name: restproxy
+    environment:
+      KAFKA_REST_HOST_NAME: rest-proxy
+      KAFKA_REST_LISTENERS: http://0.0.0.0:${REST_REGISTRY_PORTS}
+      KAFKA_REST_SCHEMA_REGISTRY_URL: http://schema-registry:${SCHEMA_REGISTRY_PORTS}
+      KAFKA_REST_BOOTSTRAP_SERVERS: 'broker:29092'
+      KAFKA_REST_CLIENT_BOOTSTRAP_SERVERS: 'broker:29092'
+      KAFKA_REST_CLIENT_SECURITY_PROTOCOL: SASL_PLAINTEXT
+      KAFKA_REST_CLIENT_SASL_MECHANISM: PLAIN
+      KAFKA_REST_CLIENT_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${KAFKA_SASL_USER}\" password=\"${KAFKA_SASL_PASS}\";"
+    networks:
+      - ens_bridge
+      - conf_kafka_network
+
+networks:
+  conf_kafka_network:
+    name: conf_kafka_network
+  ens_bridge:
+    external: true
