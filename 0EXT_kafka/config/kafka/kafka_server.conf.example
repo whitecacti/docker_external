@@ -1,0 +1,18 @@
+KafkaServer {
+    org.apache.kafka.common.security.plain.PlainLoginModule required
+    username="admin"
+    password="pass1_THISISFAKE"
+    user_admin="pass1_THISISFAKE"
+    user_enzo="user2_THISISFAKE";
+};
+
+KafkaClient {
+    org.apache.kafka.common.security.plain.PlainLoginModule required
+    user_admin="pass1_THISISFAKE";
+};
+
+Client {
+       org.apache.zookeeper.server.auth.DigestLoginModule required
+       username="user3_THISISFAKE"
+       password="user3pass_THISISFAKE";
+};
