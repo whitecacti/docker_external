@@ -19,7 +19,7 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker:29092
       KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:${SCHEMA_REGISTRY_PORTS}
       KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://connect:${CONNECT_REGISTRY_PORTS}
-      KAFKA_CLUSTERS_0_NAME: main
+      KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: main
       SERVER_SERVLET_CONTEXT_PATH: ${KAFKAUI_SERVER_SERVLET_CONTEXT_PATH}
       AUTH_TYPE: "LOGIN_FORM"
@@ -145,7 +145,17 @@ services:
       CONNECT_SECURITY_PROTOCOL: SASL_PLAINTEXT  
       CONNECT_SASL_MECHANISM: PLAIN              
       CONNECT_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${KAFKA_SASL_USER}\" password=\"${KAFKA_SASL_PASS}\";"
-      CONNECT_REST_EXTENSION_CLASSES: "org.apache.kafka.connect.rest.basic.auth.extension.BasicAuthSecurityRestExtension"
+      # CONNECT_REST_EXTENSION_CLASSES: "org.apache.kafka.connect.rest.basic.auth.extension.BasicAuthSecurityRestExtension"
+
+      # ADD THESE FOR THE SINK CONNECTORS (CONSUMERS):
+      CONNECT_CONSUMER_SECURITY_PROTOCOL: SASL_PLAINTEXT
+      CONNECT_CONSUMER_SASL_MECHANISM: PLAIN
+      CONNECT_CONSUMER_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${KAFKA_SASL_USER}\" password=\"${KAFKA_SASL_PASS}\";"
+      
+      # ADD THESE IF YOU USE SOURCE CONNECTORS (PRODUCERS):
+      CONNECT_PRODUCER_SECURITY_PROTOCOL: SASL_PLAINTEXT
+      CONNECT_PRODUCER_SASL_MECHANISM: PLAIN
+      CONNECT_PRODUCER_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${KAFKA_SASL_USER}\" password=\"${KAFKA_SASL_PASS}\";"
     volumes:
       - ./config/kafka:/conf
     networks:
