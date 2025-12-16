@@ -79,6 +79,7 @@ services:
       - broker 
     volumes:
       - ./config/kafka/topic-setup.sh:/bin/topic-setup.sh
+      - ./config/kafka:/etc/kafka/jaas
     environment:
       KAFKA_BOOTSTRAP_SERVERS: 'broker:29092'
       KAFKA_SECURITY_PROTOCOL: 'SASL_PLAINTEXT'

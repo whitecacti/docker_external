@@ -9,6 +9,7 @@ rsync -avP * nc2:~/docker/kafka/
 
 ssh nc2 "
   chmod +r ~/docker/kafka/config/kafka/*
+  chmod +x ~/docker/kafka/config/kafka/topic-setup.sh
 "
 
 # restart instance
