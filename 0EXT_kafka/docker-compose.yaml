@@ -167,12 +167,40 @@ services:
         #
         echo "Installing connector plugins"
         confluent-hub install --no-prompt confluentinc/kafka-connect-s3:10.6.7
+        confluent-hub install --no-prompt jcustenborder/kafka-connect-transform-common:latest
         #
         echo "Launching Kafka Connect worker"
         /etc/confluent/docker/run & 
         #
         sleep infinity
-  
+
+  connector-init:
+    image: curlimages/curl
+    container_name: connector-init
+    depends_on:
+      - connect
+    volumes:
+      - ./config/kafka/s3sink_secret.json:/tmp/connector_config.json
+    command: |
+      /bin/sh -c "
+      echo 'Waiting for Kafka Connect to start listening on localhost:8083 ⏳'
+      while [ $$(curl -s -o /dev/null -w %{http_code} http://connect:8083/connectors) -ne 200 ] ; do 
+        echo 'Connect service not ready yet... sleeping 5s'
+        sleep 5 
+      done
+      echo 'Kafka Connect is ready! 🚀'
+      
+      # Optional: Delete existing connector to force update
+      curl -X DELETE http://connect:8083/connectors/s3-sink-connector
+      
+      echo 'Creating S3 Sink Connector...'
+      # PUTTING THIS ON ONE LINE FIXES THE ERROR:
+      curl -X POST http://connect:8083/connectors -H 'Content-Type: application/json' -d @/tmp/connector_config.json
+           
+      echo 'Done! Exiting.'
+      "
+    networks:
+      - conf_kafka_network
   # Links - 
     # https://github.com/Erachter/ksqldb?tab=readme-ov-file
     # https://docs.confluent.io/platform/current/ksqldb/developer-guide/ksqldb-reference/create-stream.html

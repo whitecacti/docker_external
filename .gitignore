@@ -5,3 +5,9 @@ configuration.yml
 Caddyfile
 AdGuardHome.yaml
 *DS_Store*
+/z*
+client.properties
+kafka_server.conf
+*jass*
+*password*
+!*.example
