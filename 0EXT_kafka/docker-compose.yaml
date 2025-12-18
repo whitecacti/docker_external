@@ -210,6 +210,7 @@ services:
     # https://github.com/Erachter/ksqldb?tab=readme-ov-file
     # https://docs.confluent.io/platform/current/ksqldb/developer-guide/ksqldb-reference/create-stream.html
     # https://docs.confluent.io/platform/current/ksqldb/operate-and-deploy/installation/security.html
+    # https://docs.confluent.io/platform/current/ksqldb/quickstart.html
   # sh-5.1$ bin/ksql-run-class org.eclipse.jetty.util.security.Password ${KSQL_USERNAME} ${KSQL_PASSWORD}
     # Debug Options: 
     # OBF:xyz1
