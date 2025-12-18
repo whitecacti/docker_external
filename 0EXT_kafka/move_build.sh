@@ -15,6 +15,6 @@ ssh nc2 "
 # restart instance
 ssh nc2 "
   cd ~/docker/kafka
-  PUBLIC_IP=$(curl -s -4 ifconfig.me) docker compose --env-file ./config/.env down
+  PUBLIC_IP=$(curl -s -4 ifconfig.me) docker compose --env-file ./config/.env down --force-recreate
   PUBLIC_IP=$(curl -s -4 ifconfig.me) docker compose --env-file ./config/.env up --remove-orphans -d
 "
