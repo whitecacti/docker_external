@@ -22,7 +22,7 @@
 # From across the internet - https://caddy.community/t/securing-web-apps-with-caddy-and-authelia-in-docker-compose-an-opinionated-practical-and-minimal-production-ready-login-portal-guide/20465
 # Do not need auth, because everything is local/ts for this host
 # (secure) {
-# 	forward_auth {args.0} https://auth.shsolo.com {
+# 	forward_auth {args.0} https://xyz.xyz.com {
 # 		uri /api/authz/forward-auth
 # 		copy_headers Remote-User Remote-Groups Remote-Name Remote-Email
 # 		header_up Host {upstream_hostport}
