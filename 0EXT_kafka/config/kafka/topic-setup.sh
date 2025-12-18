@@ -10,13 +10,13 @@ echo "Kafka broker is ready. Initializing topics..."
 # Define your topics here using kafka-topics.sh
 # Syntax: --create --topic <TOPIC_NAME> --partitions <NUM_PARTITIONS> --replication-factor <NUM_REPLICAS>
 
-kafka-topics --bootstrap-server broker:29092 \
-             --create \
-             --topic new_data_topic \
-             --partitions 1 \
-             --replication-factor 1 \
-             --if-not-exists \
-             --command-config /etc/kafka/jaas/client.properties
+# kafka-topics --bootstrap-server broker:29092 \
+#              --create \
+#              --topic new_data_topic \
+#              --partitions 1 \
+#              --replication-factor 1 \
+#              --if-not-exists \
+#              --command-config /etc/kafka/jaas/client.properties
 
 # Topic 3: Example of a third topic
 kafka-topics --bootstrap-server broker:29092 \
