@@ -9,7 +9,7 @@ CREATE STREAM new_data_topic_stream (
     VALUE_FORMAT = 'JSON',
     TIMESTAMP = 'TIMESTAMP',  
     TIMESTAMP_FORMAT = 'yyyy-MM-dd HH:mm:ss.SSSSSS',
-    PARTITIONS = 1
+    PARTITIONS = 5
 );
 
 -- it should be possible to get offset in a stream
