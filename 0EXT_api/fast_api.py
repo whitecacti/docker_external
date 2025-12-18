@@ -8,7 +8,7 @@ app = FastAPI(title="Fake Data API", version="1.0.0")
 # Profile endpoints
 @app.get("/")
 def read_root():
-    return {"url": "api.shsolo.com"}
+    return {"url": "xyz.xyz.com"}
 
 @app.get("/api/profile")
 def get_fake_profile():
