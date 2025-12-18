@@ -215,6 +215,8 @@ services:
     # OBF:xyz1
     # MD5:xyz2
     # CRYPT:xyz3
+  # access this db anywhere with just docker!
+    # `docker run --interactive --tty --rm confluentinc/cp-ksqldb-cli:8.0.0 --user ${KSQL_USERNAME} --password ${KSQL_PASSWORD} https://xyz.xyz.com`
   ksqldbserver:
     image: confluentinc/cp-ksqldb-server:8.0.0
     hostname: ksqldbserver
