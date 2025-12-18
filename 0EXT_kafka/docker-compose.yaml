@@ -34,7 +34,9 @@ services:
       KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM: PLAIN
 
       # KSQL Stuff
-      KAFKA_CLUSTERS_0_KSQLDBSERVER: http://ksqldb-server:${KSQL_REGISTRY_PORTS}
+      KAFKA_CLUSTERS_0_KSQLDBSERVER: http://ksqldbserver:${KSQL_REGISTRY_PORTS}
+      KAFKA_CLUSTERS_0_KSQLDBSERVERAUTH_USERNAME: ${KSQL_USERNAME}
+      KAFKA_CLUSTERS_0_KSQLDBSERVERAUTH_PASSWORD: ${KSQL_PASSWORD}
     networks:
       - ens_bridge
       - conf_kafka_network
@@ -207,20 +209,34 @@ services:
   # Links - 
     # https://github.com/Erachter/ksqldb?tab=readme-ov-file
     # https://docs.confluent.io/platform/current/ksqldb/developer-guide/ksqldb-reference/create-stream.html
-  ksqldb-server:
+    # https://docs.confluent.io/platform/current/ksqldb/operate-and-deploy/installation/security.html
+  # sh-5.1$ bin/ksql-run-class org.eclipse.jetty.util.security.Password ${KSQL_USERNAME} ${KSQL_PASSWORD}
+    # Debug Options: 
+    # OBF:xyz1
+    # MD5:xyz2
+    # CRYPT:xyz3
+  ksqldbserver:
     image: confluentinc/cp-ksqldb-server:8.0.0
-    hostname: ksqldb-server
-    container_name: ksqldb-server
+    hostname: ksqldbserver
+    container_name: ksqldbserver
     depends_on:
       - broker
       - connect
       - topic-initializer
     ports:
       - ${KSQL_CONFIG_REGISTRY_PORTS}
+    volumes:
+      - ./config/ksql/ksql-server_secret.properties:/etc/ksql-server/ksql-server.properties
+      - ./config/ksql/ksql-jaas_secret.properties:/etc/ksql-server/ksql-jaas.properties
+      - ./config/ksql/jaas_config_secret.file:/etc/ksql-server/jaas_config.file
     environment:
-      KSQL_CONFIG_DIR: "/etc/ksql"
+      KSQL_CONFIG_DIR: "/etc/ksql-server"
       KSQL_BOOTSTRAP_SERVERS: "broker:29092"
-      KSQL_HOST_NAME: ksqldb-server
+      KSQL_AUTHENTICATION_METHOD: BASIC
+      KSQL_AUTHENTICATION_REALM: KsqlServer-Props
+      KSQL_AUTHENTICATION_ROLES: admin
+      KSQL_OPTS: "-Djava.security.auth.login.config=/etc/ksql-server/jaas_config.file -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.StdErrLog -Dorg.eclipse.jetty.LEVEL=DEBUG"
+      KSQL_HOST_NAME: ksqldbserver
       KSQL_LISTENERS: http://0.0.0.0:${KSQL_REGISTRY_PORTS}
       KSQL_CACHE_MAX_BYTES_BUFFERING: 0
       KSQL_KSQL_SCHEMA_REGISTRY_URL: http://schema-registry:${SCHEMA_REGISTRY_PORTS}
@@ -232,15 +248,19 @@ services:
       KSQL_SASL_MECHANISM: PLAIN 
       KSQL_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"${KAFKA_SASL_USER}\" password=\"${KAFKA_SASL_PASS}\";"
     networks:
+      - ens_bridge
       - conf_kafka_network
 
+  # To play with ksqlDB you can either use this container or go from an external host
+  # `docker run --interactive --tty --rm confluentinc/cp-ksqldb-cli:8.0.0 http://xyz:0000`
+  # show streams;
   ksqldb-cli:
     image: confluentinc/cp-ksqldb-cli:8.0.0
     container_name: ksqldb-cli
     depends_on:
       - broker
       - connect
-      - ksqldb-server
+      - ksqldbserver
     entrypoint: /bin/sh
     tty: true
     networks:
@@ -250,7 +270,7 @@ services:
     image: confluentinc/cp-ksqldb-cli:8.0.0
     container_name: ksql-initializer
     depends_on:
-      - ksqldb-server
+      - ksqldbserver
     volumes:
       - ./config/ksql/init.sql:/data/init.sql
     networks:
@@ -264,13 +284,13 @@ services:
       - |
         echo "⏳ Waiting for KSQL Server to be ready..."
         # Loop until we can successfully execute a dummy command (SHOW TOPICS)
-        while ! ksql http://ksqldb-server:${KSQL_REGISTRY_PORTS} --execute "SHOW TOPICS;" > /dev/null 2>&1; do
+        while ! ksql --user ${KSQL_USERNAME} --password ${KSQL_PASSWORD} http://ksqldbserver:${KSQL_REGISTRY_PORTS} --execute "SHOW TOPICS;" > /dev/null 2>&1; do
           echo "   KSQL Server not ready yet... sleeping 5s"
           sleep 5
         done
 
         echo "🚀 KSQL Server is ready! Running initialization script..."
-        ksql http://ksqldb-server:${KSQL_REGISTRY_PORTS} --file /data/init.sql
+        ksql --user ${KSQL_USERNAME} --password ${KSQL_PASSWORD} http://ksqldbserver:${KSQL_REGISTRY_PORTS} --file /data/init.sql
         
         echo "✅ Done! Stream created."
 
@@ -279,7 +299,7 @@ services:
     hostname: ksql-datagen
     container_name: ksql-datagen
     depends_on:
-      - ksqldb-server
+      - ksqldbserver
       - broker
       - schema-registry
       - connect
