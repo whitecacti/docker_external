@@ -55,7 +55,7 @@ CREATE TABLE ridersNearMountainView AS
     -- `SELECT * from ridersNearMountainView WHERE distanceInMiles <= 10;`
     -- `SELECT * from ridersNearMountainView;`
 
--- Discord testing
+-- Discord testing, this will also create a topic
 -- {
 -- 	"id": 0000000000000,
 -- 	"channel_id": 0000000000000,
@@ -76,3 +76,92 @@ CREATE STREAM discord_stream (
     VALUE_FORMAT='JSON',
     PARTITIONS=1
 );
+
+
+-- wikipedia streams
+-- this is the real name of the topic - codfw.mediawiki.recentchange
+SET 'auto.offset.reset' = 'earliest'; 
+CREATE STREAM wikimedia_recent_changes (
+    `$schema` VARCHAR,
+    meta STRUCT<
+        uri VARCHAR,
+        request_id VARCHAR,
+        id VARCHAR,
+        domain VARCHAR,
+        `stream` VARCHAR, 
+        dt VARCHAR,
+        `topic` VARCHAR,
+        `partition` INT,
+        `offset` BIGINT
+    >,
+    id BIGINT,
+    `type` VARCHAR,
+    `namespace` INT,
+    title VARCHAR,
+    title_url VARCHAR,
+    comment VARCHAR,
+    `timestamp` BIGINT,
+    `user` VARCHAR,
+    bot BOOLEAN,
+    notify_url VARCHAR,
+    server_url VARCHAR,
+    server_name VARCHAR,
+    server_script_path VARCHAR,
+    wiki VARCHAR,
+    parsedcomment VARCHAR
+) WITH (
+    KAFKA_TOPIC = 'wikipedia_all', 
+    VALUE_FORMAT = 'JSON'
+);
+
+-- flattening the above
+CREATE STREAM wikimedia_recent_changes_flat AS
+SELECT
+    `$schema`,
+    -- Flattening the 'meta' struct
+    meta->uri AS meta_uri,
+    meta->request_id AS meta_request_id,
+    meta->id AS meta_id,
+    meta->domain AS meta_domain,
+    meta->`stream` AS meta_stream,
+    meta->dt AS meta_dt,
+    meta->`topic` AS meta_topic,
+    meta->`partition` AS meta_partition,
+    meta->`offset` AS meta_offset,
+    -- Selecting root level fields
+    id,
+    `type`,
+    `namespace`,
+    title,
+    title_url,
+    comment,
+    `timestamp`,
+    `user`,
+    bot,
+    notify_url,
+    server_url,
+    server_name,
+    server_script_path,
+    wiki,
+    parsedcomment
+FROM wikimedia_recent_changes
+EMIT CHANGES;
+
+-- CREATE TABLE AS SELECT (CTAS) - Or Materialized View
+-- make sure the table has everything from the begginning
+SET 'auto.offset.reset' = 'earliest'; 
+CREATE TABLE wikipedia_distinct_domains AS
+SELECT
+    meta_domain,
+    COUNT(*) AS total_occurrences,
+    LATEST_BY_OFFSET(`timestamp`) AS last_seen
+FROM wikimedia_recent_changes_flat
+GROUP BY meta_domain
+EMIT CHANGES;
+
+-- CREATE STREAM AS SELECT (CSAS)
+CREATE STREAM wikipedia_us_changes AS
+SELECT *
+FROM wikimedia_recent_changes_flat
+WHERE meta_domain = 'en.wikipedia.org'
+EMIT CHANGES;

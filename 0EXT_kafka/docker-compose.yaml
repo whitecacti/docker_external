@@ -179,8 +179,9 @@ services:
         #
         sleep infinity
 
+  # PUBLIC_IP=$(curl -s -4 ifconfig.me) docker compose --env-file ./config/.env up connector-init 
   connector-init:
-    image: curlimages/curl
+    image: alpine:latest
     container_name: connector-init
     depends_on:
       - connect
@@ -188,21 +189,35 @@ services:
       - ./config/kafka/s3sink_secret.json:/tmp/connector_config.json
     command: |
       /bin/sh -c "
-      echo 'Waiting for Kafka Connect to start listening on localhost:\"${CONNECT_REGISTRY_PORTS}\" ⏳'
-      while [ $$(curl -s -o /dev/null -w %{http_code} http://connect:\"${CONNECT_REGISTRY_PORTS}\"/connectors) -ne 200 ] ; do 
+      apk add --no-cache curl jq
+
+      echo 'Waiting for Kafka Connect to start listening on localhost:${CONNECT_REGISTRY_PORTS} ⏳'
+      while [ $$(curl -s -o /dev/null -w %{http_code} http://connect:${CONNECT_REGISTRY_PORTS}/connectors) -ne 200 ] ; do 
         echo 'Connect service not ready yet... sleeping 5s'
         sleep 5 
       done
       echo 'Kafka Connect is ready! 🚀'
       
-      # Optional: Delete existing connector to force update
-      curl -X DELETE http://connect:\"${CONNECT_REGISTRY_PORTS}\"/connectors/s3-sink-connector
-      
-      echo 'Creating S3 Sink Connector...'
-      # PUTTING THIS ON ONE LINE FIXES THE ERROR:
-      curl -X POST http://connect:\"${CONNECT_REGISTRY_PORTS}\"/connectors -H 'Content-Type: application/json' -d @/tmp/connector_config.json
-           
+      # Iterate through the JSON array
+      jq -c '.[]' /tmp/connector_config.json | while read connector; do
+        # Extract the name
+        NAME=$$(echo "\$$connector" | jq -r '.name')
+        
+        echo \"---------------------------------------------------\"
+        echo \"Processing connector: \$$NAME\"
+        
+        echo \"Deleting existing \$$NAME (if any)...\"
+        curl -X DELETE http://connect:${CONNECT_REGISTRY_PORTS}/connectors/\$$NAME
+        
+        echo \"Creating \$$NAME...\"
+        # FIXED: Curl command is now on a single line to prevent shell errors
+        curl -X POST http://connect:${CONNECT_REGISTRY_PORTS}/connectors -H 'Content-Type: application/json' -d "\$$connector"
+        
+        echo \"\"
+      done
+
       echo 'Done! Exiting.'
+      sleep infinity
       "
     networks:
       - conf_kafka_network

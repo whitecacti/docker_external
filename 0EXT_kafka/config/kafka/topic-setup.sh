@@ -10,21 +10,29 @@ echo "Kafka broker is ready. Initializing topics..."
 # Define your topics here using kafka-topics.sh
 # Syntax: --create --topic <TOPIC_NAME> --partitions <NUM_PARTITIONS> --replication-factor <NUM_REPLICAS>
 
-# kafka-topics --bootstrap-server broker:29092 \
-#              --create \
-#              --topic new_data_topic \
-#              --partitions 1 \
-#              --replication-factor 1 \
-#              --if-not-exists \
-#              --command-config /etc/kafka/jaas/client.properties
+# Things to remember 
+# - Error while executing topic command : Unable to replicate the partition 2 time(s): The target replication factor of 2 cannot be reached because only 1 broker(s) are registered.
 
-# Topic 3: Example of a third topic
+# https://stream.wikimedia.org/v2/stream/recentchange
+# https://www.mediawiki.org/wiki/API:Recent_changes_stream
 kafka-topics --bootstrap-server broker:29092 \
              --create \
-             --topic sensor_readings_raw \
-             --partitions 5 \
+             --topic wikipedia_all \
+             --partitions 10 \
              --replication-factor 1 \
              --if-not-exists \
-             --command-config /etc/kafka/jaas/client.properties
+             --command-config /etc/kafka/jaas/client.properties \
+             --config retention.ms=3600000 \
+             --config cleanup.policy=delete
+
+kafka-topics --bootstrap-server broker:29092 \
+             --create \
+             --topic cb_btc_usd \
+             --partitions 10 \
+             --replication-factor 1 \
+             --if-not-exists \
+             --command-config /etc/kafka/jaas/client.properties \
+             --config retention.ms=3600000 \
+             --config cleanup.policy=delete
 
 echo "Topic initialization complete!"
