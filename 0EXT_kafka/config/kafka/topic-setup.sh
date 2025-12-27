@@ -35,4 +35,14 @@ kafka-topics --bootstrap-server broker:29092 \
              --config retention.ms=3600000 \
              --config cleanup.policy=delete
 
+kafka-topics --bootstrap-server broker:29092 \
+             --create \
+             --topic scapy_wardriving \
+             --partitions 4 \
+             --replication-factor 1 \
+             --if-not-exists \
+             --command-config /etc/kafka/jaas/client.properties \
+             --config retention.ms=604800000 \
+             --config cleanup.policy=compact
+
 echo "Topic initialization complete!"

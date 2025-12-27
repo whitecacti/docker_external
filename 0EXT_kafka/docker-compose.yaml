@@ -144,8 +144,8 @@ services:
       CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
       CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schema-registry:${SCHEMA_REGISTRY_PORTS}
       CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
-      CONNECT_PRODUCER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor"
-      CONNECT_CONSUMER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor"
+      # CONNECT_PRODUCER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor"
+      # CONNECT_CONSUMER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor"
 
       CONNECT_SECURITY_PROTOCOL: SASL_PLAINTEXT  
       CONNECT_SASL_MECHANISM: PLAIN              
@@ -179,6 +179,7 @@ services:
         #
         sleep infinity
 
+  # rsync -avP * nc2:~/docker/kafka/ 
   # PUBLIC_IP=$(curl -s -4 ifconfig.me) docker compose --env-file ./config/.env up connector-init 
   connector-init:
     image: alpine:latest
