@@ -1,0 +1,22 @@
+services:
+  db:
+    build: ./build/.
+    container_name: postgres_de
+    env_file: ./config/.env
+    volumes:
+      - ./config:/config
+      - ./sql:/sql
+    ports:
+      - ${DOCKER_PORTS}
+    command: 
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_parquet,pg_cron
+      - -c
+      - cron.database_name=postgres
+    networks:
+      - ens_bridge
+
+networks:
+  ens_bridge:
+    external: true
