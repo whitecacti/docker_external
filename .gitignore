@@ -1,4 +1,5 @@
 .env
+.env.s3
 *secret*
 users_database.yml
 configuration.yml
