@@ -34,6 +34,7 @@ x-airflow-common:
     - airflow-logs:/opt/airflow/logs
     - airflow-config:/opt/airflow/config
     - airflow-plugins:/opt/airflow/plugins
+    - airflow-sparkjobs:/opt/airflow/sparkjobs
   depends_on:
     &airflow-common-depends-on
     redis:
@@ -195,7 +196,9 @@ services:
       - airflow-logs:/opt/airflow/logs
       - airflow-config:/opt/airflow/config
       - airflow-plugins:/opt/airflow/plugins
+      - airflow-sparkjobs:/opt/airflow/sparkjobs
       - ${AIRFLOW_PROJ_DIR:-.}/dags:/files/dags
+      - ${AIRFLOW_PROJ_DIR:-.}/sparkjobs:/files/sparkjobs
       - ${AIRFLOW_PROJ_DIR:-.}/config:/files/config
       - ${AIRFLOW_PROJ_DIR:-.}/plugins:/files/plugins
     command:
@@ -253,6 +256,7 @@ services:
         cp -R /files/dags/. /opt/airflow/dags/ || true
         cp -R /files/plugins/. /opt/airflow/plugins/ || true
         cp -R /files/config/. /opt/airflow/config/ || true
+        cp -R /files/sparkjobs/. /opt/airflow/sparkjobs/ || true
         echo
         echo "Airflow version:"
         /entrypoint airflow version
@@ -350,6 +354,7 @@ volumes:
   airflow-logs:
   airflow-config:
   airflow-plugins:
+  airflow-sparkjobs:
 
 networks:
   ens_bridge:

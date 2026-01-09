@@ -34,5 +34,5 @@ ssh nc2 "
   # chmod -R o+r config
 
   docker compose --env-file ./config/.env down --volumes --remove-orphans
-  docker compose --env-file ./config/.env up
+  docker compose --env-file ./config/.env up -d
 "
