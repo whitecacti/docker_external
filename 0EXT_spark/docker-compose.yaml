@@ -1,0 +1,86 @@
+x-spark-image: &spark-image
+  build:
+    context: .
+    dockerfile: Dockerfile
+
+services:
+  spark-master:
+    <<: *spark-image
+    container_name: spark-master
+    hostname: spark-master
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+    ports:
+      - ${DOCKER_SPARK_MASTER_UI}
+      - ${DOCKER_SPARK_MASTER}
+    networks:
+      - ens_bridge
+    environment:
+      - SPARK_MASTER_HOST=spark-master
+      - PYSPARK_PYTHON=/usr/local/bin/python3.11
+      - PYSPARK_DRIVER_PYTHON=/usr/local/bin/python3.11
+    volumes:
+      - spark-logs:/opt/spark/spark-events
+      - ./conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
+
+  spark-worker-1:
+    <<: *spark-image
+    container_name: spark-worker-1
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    depends_on:
+      - spark-master
+    ports:
+      - ${DOCKER_SPARK_WORKER_1}
+    networks:
+      - ens_bridge
+    environment:
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=4g
+      - PYSPARK_PYTHON=/usr/local/bin/python3.11
+      - PYSPARK_DRIVER_PYTHON=/usr/local/bin/python3.11
+    volumes:
+      - spark-logs:/opt/spark/spark-events
+      - ./conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
+
+  spark-worker-2:
+    <<: *spark-image
+    container_name: spark-worker-2
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    depends_on:
+      - spark-master
+    ports:
+      - ${DOCKER_SPARK_WORKER_2}
+    networks:
+      - ens_bridge
+    environment:
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=4g
+      - PYSPARK_PYTHON=/usr/local/bin/python3.11
+      - PYSPARK_DRIVER_PYTHON=/usr/local/bin/python3.11
+    volumes:
+      - spark-logs:/opt/spark/spark-events
+      - ./conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
+
+  spark-history:
+    <<: *spark-image
+    container_name: spark-history
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.history.HistoryServer
+    depends_on:
+      - spark-master
+    ports:
+      - ${DOCKER_SPARK_HISTORY_UI}
+    networks:
+      - ens_bridge
+    environment:
+      - SPARK_HISTORY_OPTS=-Dspark.history.fs.logDirectory=file:///opt/spark/spark-events
+      - PYSPARK_PYTHON=/usr/local/bin/python3.11
+      - PYSPARK_DRIVER_PYTHON=/usr/local/bin/python3.11
+    volumes:
+      - spark-logs:/opt/spark/spark-events
+      - ./conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
+
+volumes:
+  spark-logs:
+
+networks:
+  ens_bridge:
+    external: true
