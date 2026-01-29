@@ -106,5 +106,9 @@ where true
 and r['event_ticker'] ilike '%KXSB%'
 group by 1;
 
+-- If pg_duckdb is stuck on reading the same file
+-- [XX000] ERROR: (PGDuckDB/Duckdb_ExecCustomScan_Cpp) IO Error: Cannot open file "/datasets/kalshi_data/trades/trades_1840000_1850000.parquet": Too many open files 
+-- SET pg_duckdb.threads = 1;
+-- SELECT pg_terminate_backend(pg_backend_pid());
 
 
