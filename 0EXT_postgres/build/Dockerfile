@@ -3,12 +3,18 @@ FROM postgres:17-bookworm
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
     curl \
+    libcurl4-openssl-dev \
+    libicu-dev \
     git \
     build-essential \
     libssl-dev \
     pkg-config \
     clang \
     llvm-dev \
+    cmake \
+    ninja-build \
+    liblz4-dev \
+    libzstd-dev \
     libclang-dev \
     postgresql-server-dev-17 \
     postgresql-17-postgis-3 \
@@ -32,6 +38,12 @@ RUN cargo pgrx init --pg${PG_MAJOR} $(which pg_config)
 WORKDIR /usr/src
 RUN git clone https://github.com/citusdata/pg_cron.git
 WORKDIR /usr/src/pg_cron
+RUN make && make install
+
+# install pg_duckdb
+WORKDIR /usr/src
+RUN git clone https://github.com/duckdb/pg_duckdb.git
+WORKDIR /usr/src/pg_duckdb
 RUN make && make install
 
 # Clone pg_parquet repo

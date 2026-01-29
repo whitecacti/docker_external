@@ -6,12 +6,13 @@ services:
     volumes:
       - ./config:/config
       - ./sql:/sql
+      - /home/nahfam/datasets:/datasets
     ports:
       - ${DOCKER_PORTS}
     command: 
       - postgres
       - -c
-      - shared_preload_libraries=pg_parquet,pg_cron
+      - shared_preload_libraries=pg_parquet,pg_cron,pg_duckdb
       - -c
       - cron.database_name=postgres
     networks:
