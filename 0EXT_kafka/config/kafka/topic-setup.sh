@@ -45,4 +45,70 @@ kafka-topics --bootstrap-server broker:29092 \
              --config retention.ms=604800000 \
              --config cleanup.policy=compact
 
+kafka-topics \
+    --bootstrap-server broker:29092 \
+    --create \
+    --topic kalshi_trade_demo \
+    --partitions 6 \
+    --replication-factor 1 \
+    --if-not-exists \
+    --command-config /etc/kafka/jaas/client.properties \
+    --config retention.ms=86400000 \
+    --config cleanup.policy=delete
+
+kafka-topics \
+    --bootstrap-server broker:29092 \
+    --create \
+    --topic kalshi_trade_real_money \
+    --partitions 6 \
+    --replication-factor 1 \
+    --if-not-exists \
+    --command-config /etc/kafka/jaas/client.properties \
+    --config retention.ms=86400000 \
+    --config cleanup.policy=delete
+
+kafka-topics \
+    --bootstrap-server broker:29092 \
+    --create \
+    --topic kalshi_ticker_demo \
+    --partitions 6 \
+    --replication-factor 1 \
+    --if-not-exists \
+    --command-config /etc/kafka/jaas/client.properties \
+    --config retention.ms=86400000 \
+    --config cleanup.policy=delete
+
+kafka-topics \
+    --bootstrap-server broker:29092 \
+    --create \
+    --topic kalshi_ticker_real_money \
+    --partitions 6 \
+    --replication-factor 1 \
+    --if-not-exists \
+    --command-config /etc/kafka/jaas/client.properties \
+    --config retention.ms=86400000 \
+    --config cleanup.policy=delete
+
+kafka-topics \
+    --bootstrap-server broker:29092 \
+    --create \
+    --topic kalshi_market_lifecycle_demo \
+    --partitions 1 \
+    --replication-factor 1 \
+    --if-not-exists \
+    --command-config /etc/kafka/jaas/client.properties \
+    --config retention.ms=86400000 \
+    --config cleanup.policy=delete
+
+kafka-topics \
+    --bootstrap-server broker:29092 \
+    --create \
+    --topic kalshi_market_lifecycle_real_money \
+    --partitions 1 \
+    --replication-factor 1 \
+    --if-not-exists \
+    --command-config /etc/kafka/jaas/client.properties \
+    --config retention.ms=86400000 \
+    --config cleanup.policy=delete
+
 echo "Topic initialization complete!"
