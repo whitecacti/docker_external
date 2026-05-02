@@ -1,0 +1,23 @@
+services:
+  actual_server:
+    container_name: actualserver
+    image: docker.io/actualbudget/actual-server:latest
+    ports:
+      - ${ACTUAL_BUDGET_PORTS}
+    environment:
+      - ACTUAL_PORT=${ACTUAL_PORT}
+    volumes:
+      - ./actual_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "node src/scripts/health-check.js"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - ens_bridge
+
+networks:
+  ens_bridge:
+    external: true
